@@ -18,7 +18,8 @@ KAFKA_CONFIG = {
 }
 
 WIKI_STREAM_URL = "https://stream.wikimedia.org/v2/stream/recentchange"
-HEADERS = { "User-Agent": "wikipedia-anomaly-pipeline" }
+HEADERS = { "User-Agent": "wikipedia-anomaly-pipeline",
+           "Accept": "text/event-stream" }
 
 PAGE_EVENT_TYPES = {"categorize", "log"}
 EDIT_EVENT_TYPES = {"edit", "new"}
@@ -82,7 +83,7 @@ def run():
 
     while True:
         try:
-            response = requests.get(WIKI_STREAM_URL, stream=True, headers=HEADERS)
+            response = requests.get(WIKI_STREAM_URL, stream=True, headers=HEADERS, timeout=(10, 60))
             client = SSEClient(response)
 
             for event in client.events():
