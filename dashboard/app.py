@@ -74,7 +74,9 @@ if auto_refresh:
     import time
     st.sidebar.caption(f"Last refresh: {datetime.utcnow().strftime('%H:%M:%S')} UTC")
 
-since_ts = (datetime.utcnow() - timedelta(hours=lookback_hours)).strftime("%Y-%m-%d %H:%M:%S")
+since_dt   = datetime.utcnow() - timedelta(hours=lookback_hours)
+since_ts   = since_dt.strftime("%Y-%m-%d %H:%M:%S")
+since_date = since_dt.strftime("%Y-%m-%d")
 
 # ---------------------------------------------------------------------------
 # Data loading
@@ -98,6 +100,7 @@ SELECT
     anomaly_threshold
 FROM gold_edit_volume
 WHERE window_duration = '{window_choice}'
+  AND date >= '{since_date}'
   AND window_start >= '{since_ts}'
 ORDER BY window_start
 """
@@ -113,6 +116,7 @@ SELECT
     unique_pages_edited
 FROM gold_user_activity
 WHERE window_duration = '{window_choice}'
+  AND date >= '{since_date}'
   AND window_start >= '{since_ts}'
 ORDER BY window_start, edit_count DESC
 """
