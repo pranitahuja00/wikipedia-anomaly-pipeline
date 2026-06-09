@@ -39,6 +39,11 @@ silver_df = (
 )
 
 total_rows = silver_df.count()
+
+if total_rows == 0:
+    print(f"No silver data found since {lookback_date} — producer may be off or silver hasn't run yet.")
+    dbutils.notebook.exit("No data in lookback window")
+
 time_range = silver_df.agg(
     F.min("edit_timestamp").alias("earliest"),
     F.max("edit_timestamp").alias("latest")
