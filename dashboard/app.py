@@ -74,7 +74,11 @@ if auto_refresh:
     import time
     st.sidebar.caption(f"Last refresh: {datetime.utcnow().strftime('%H:%M:%S')} UTC")
 
-since_dt   = datetime.utcnow() - timedelta(hours=lookback_hours)
+# Round down to nearest 5 min so the SQL string stays stable between renders
+# and @st.cache_data actually hits the cache instead of querying on every rerun
+_now       = datetime.utcnow().replace(second=0, microsecond=0)
+_now       = _now - timedelta(minutes=_now.minute % 5)
+since_dt   = _now - timedelta(hours=lookback_hours)
 since_ts   = since_dt.strftime("%Y-%m-%d %H:%M:%S")
 since_date = since_dt.strftime("%Y-%m-%d")
 
