@@ -22,6 +22,7 @@ def get_workspace_client():
     return WorkspaceClient()
 
 
+@st.cache_resource
 def _get_warehouse_http_path() -> str:
     if os.environ.get("DATABRICKS_WAREHOUSE_HTTP_PATH"):
         return os.environ["DATABRICKS_WAREHOUSE_HTTP_PATH"]
