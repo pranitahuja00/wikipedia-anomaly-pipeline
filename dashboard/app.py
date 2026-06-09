@@ -16,27 +16,28 @@ st.set_page_config(
 # Connection — credentials injected by Databricks App runtime
 # ---------------------------------------------------------------------------
 
+@st.cache_resource
+def get_workspace_client():
+    from databricks.sdk import WorkspaceClient
+    return WorkspaceClient()
+
+
 def _get_warehouse_http_path() -> str:
-    # Prefer explicit env var (set via App environment config in the UI)
     if os.environ.get("DATABRICKS_WAREHOUSE_HTTP_PATH"):
         return os.environ["DATABRICKS_WAREHOUSE_HTTP_PATH"]
-    # Fall back to Databricks secret scope (requires secret to exist)
-    import urllib.request, urllib.error
-    token = os.environ["DATABRICKS_TOKEN"]
-    host  = os.environ["DATABRICKS_HOST"]
-    url   = f"{host}/api/2.0/secrets/get?scope=wikipedia-anomaly-pipeline&key=warehouse-http-path"
-    req   = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
-    with urllib.request.urlopen(req) as resp:
-        import json
-        return json.loads(resp.read())["value"]
+    w = get_workspace_client()
+    return w.secrets.get_secret(
+        scope="wikipedia-anomaly-pipeline", key="warehouse-http-path"
+    ).value
 
 
 @st.cache_resource
 def get_connection():
+    w = get_workspace_client()
     return sql.connect(
-        server_hostname=os.environ["DATABRICKS_HOST"],
+        server_hostname=w.config.host,
         http_path=_get_warehouse_http_path(),
-        access_token=os.environ["DATABRICKS_TOKEN"],
+        access_token=w.config.token,
     )
 
 
