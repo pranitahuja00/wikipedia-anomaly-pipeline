@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from typing import Optional, Tuple
 import requests
 from dotenv import load_dotenv
 from sseclient import SSEClient
@@ -32,7 +33,7 @@ def delivery_report(err, msg):
         print(f"Delivery failed for message: {err}")
 
 
-def parse_and_route(event_data: dict) -> tuple[str, dict] | None:
+def parse_and_route(event_data: dict) -> Optional[Tuple[str, dict]]:
     """
     Decides which topic an event belongs to and strips
     fields we do not need, keeping the payload lean.
