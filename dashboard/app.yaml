@@ -1,0 +1,8 @@
+command: ["streamlit", "run", "app.py", "--server.port", "8080", "--server.address", "0.0.0.0"]
+
+env:
+  - name: DATABRICKS_WAREHOUSE_HTTP_PATH
+    valueFrom:
+      secretRef:
+        key: warehouse-http-path
+        scope: wikipedia-anomaly-pipeline
