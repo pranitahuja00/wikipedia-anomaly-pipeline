@@ -1,0 +1,18 @@
+[Unit]
+Description=Wikipedia Kafka Producer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/wikipedia-anomaly-pipeline
+EnvironmentFile=/home/ec2-user/wikipedia-anomaly-pipeline/.env
+ExecStart=/usr/bin/python3 producer/wiki_producer.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
