@@ -17,27 +17,18 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 
 @st.cache_resource
-def get_workspace_client():
-    from databricks.sdk import WorkspaceClient
-    return WorkspaceClient()
-
-
-@st.cache_resource
-def _get_warehouse_http_path() -> str:
-    if os.environ.get("DATABRICKS_WAREHOUSE_HTTP_PATH"):
-        return os.environ["DATABRICKS_WAREHOUSE_HTTP_PATH"]
-    w = get_workspace_client()
-    return w.secrets.get_secret(
-        scope="wikipedia-anomaly-pipeline", key="warehouse-http-path"
-    ).value
-
-
-@st.cache_resource
 def get_connection():
-    w = get_workspace_client()
+    from databricks.sdk import WorkspaceClient
+    w = WorkspaceClient()
+    warehouse_http_path = (
+        os.environ.get("DATABRICKS_WAREHOUSE_HTTP_PATH")
+        or w.secrets.get_secret(
+            scope="wikipedia-anomaly-pipeline", key="warehouse-http-path"
+        ).value
+    )
     return sql.connect(
         server_hostname=w.config.host,
-        http_path=_get_warehouse_http_path(),
+        http_path=warehouse_http_path,
         access_token=w.config.token,
     )
 
