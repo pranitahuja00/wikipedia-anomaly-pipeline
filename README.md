@@ -1,3 +1,5 @@
+## https://wiki-anomaly-pipeline-7474649013979407.aws.databricksapps.com/
+
 # Wikipedia Anomaly Pipeline
 
 Real-time pipeline that streams Wikipedia edit events, detects edit volume anomalies and bot activity using Z-score analysis, and displays results in a live Streamlit dashboard.
