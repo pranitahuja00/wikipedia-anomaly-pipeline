@@ -16,18 +16,17 @@ st.set_page_config(
 # Connection
 # ---------------------------------------------------------------------------
 
+WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/b05d02cebe141c50"
+
+
 @st.cache_resource
 def get_connection():
-    host       = os.environ["DATABRICKS_HOST"]
-    http_path  = os.environ["DATABRICKS_WAREHOUSE_HTTP_PATH"]
-    client_id  = os.environ["DATABRICKS_CLIENT_ID"]
-    client_secret = os.environ["DATABRICKS_CLIENT_SECRET"]
     return sql.connect(
-        server_hostname=host,
-        http_path=http_path,
+        server_hostname=os.environ["DATABRICKS_HOST"],
+        http_path=WAREHOUSE_HTTP_PATH,
         auth_type="databricks-oauth",
-        oauth_client_id=client_id,
-        oauth_client_secret=client_secret,
+        oauth_client_id=os.environ["DATABRICKS_CLIENT_ID"],
+        oauth_client_secret=os.environ["DATABRICKS_CLIENT_SECRET"],
     )
 
 
