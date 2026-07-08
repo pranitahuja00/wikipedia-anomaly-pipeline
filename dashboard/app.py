@@ -16,20 +16,17 @@ st.set_page_config(
 # Connection
 # ---------------------------------------------------------------------------
 
+WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/b05d02cebe141c50"
+
+
 @st.cache_resource
 def get_connection():
-    from databricks.sdk import WorkspaceClient
-    w = WorkspaceClient()
-    warehouse_http_path = (
-        os.environ.get("DATABRICKS_WAREHOUSE_HTTP_PATH")
-        or w.secrets.get_secret(
-            scope="wikipedia-anomaly-pipeline", key="warehouse-http-path"
-        ).value
-    )
     return sql.connect(
-        server_hostname=w.config.host,
-        http_path=warehouse_http_path,
-        access_token=w.config.token,
+        server_hostname=os.environ["DATABRICKS_HOST"],
+        http_path=WAREHOUSE_HTTP_PATH,
+        auth_type="databricks-oauth",
+        oauth_client_id=os.environ["DATABRICKS_CLIENT_ID"],
+        oauth_client_secret=os.environ["DATABRICKS_CLIENT_SECRET"],
     )
 
 
