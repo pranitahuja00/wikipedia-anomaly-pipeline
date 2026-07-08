@@ -1,4 +1,5 @@
 import os
+import time
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -13,35 +14,57 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
+# Credentials — from Streamlit secrets (Streamlit Cloud) or env vars (Databricks Apps)
+# ---------------------------------------------------------------------------
+
+def _secret(key: str) -> str:
+    if hasattr(st, "secrets") and key in st.secrets:
+        return st.secrets[key]
+    return os.environ[key]
+
+
+WAREHOUSE_ID       = "b05d02cebe141c50"
+WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/b05d02cebe141c50"
+
+# ---------------------------------------------------------------------------
+# Warehouse auto-start
+# ---------------------------------------------------------------------------
+
+@st.cache_resource
+def _ensure_warehouse_running():
+    from databricks.sdk import WorkspaceClient
+    from databricks.sdk.service.sql import State
+
+    w = WorkspaceClient(
+        host=_secret("DATABRICKS_HOST"),
+        token=_secret("DATABRICKS_TOKEN"),
+    )
+
+    warehouse = w.warehouses.get(WAREHOUSE_ID)
+    if warehouse.state not in (State.RUNNING,):
+        with st.spinner("Starting SQL warehouse (first load only — takes ~60s)..."):
+            w.warehouses.start(WAREHOUSE_ID)
+            # Poll until running
+            for _ in range(60):
+                warehouse = w.warehouses.get(WAREHOUSE_ID)
+                if warehouse.state == State.RUNNING:
+                    break
+                time.sleep(5)
+
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Connection
 # ---------------------------------------------------------------------------
 
-WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/b05d02cebe141c50"
-
-
-def _fetch_token() -> str:
-    import urllib.request, urllib.parse, json, base64
-    host          = os.environ["DATABRICKS_HOST"].rstrip("/")
-    if not host.startswith("https://"):
-        host = f"https://{host}"
-    client_id     = os.environ["DATABRICKS_CLIENT_ID"]
-    client_secret = os.environ["DATABRICKS_CLIENT_SECRET"]
-    credentials   = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-    data          = urllib.parse.urlencode({"grant_type": "client_credentials", "scope": "all-apis"}).encode()
-    req           = urllib.request.Request(
-        f"{host}/oidc/v1/token", data=data,
-        headers={"Content-Type": "application/x-www-form-urlencoded", "Authorization": f"Basic {credentials}"},
-    )
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())["access_token"]
-
-
 @st.cache_resource
 def get_connection():
+    _ensure_warehouse_running()
     return sql.connect(
-        server_hostname=os.environ["DATABRICKS_HOST"],
+        server_hostname=_secret("DATABRICKS_HOST"),
         http_path=WAREHOUSE_HTTP_PATH,
-        access_token=_fetch_token(),
+        access_token=_secret("DATABRICKS_TOKEN"),
     )
 
 
@@ -74,7 +97,6 @@ lookback_hours = st.sidebar.slider(
 auto_refresh = st.sidebar.checkbox("Auto-refresh every 2 min", value=False)
 
 if auto_refresh:
-    import time
     st.sidebar.caption(f"Last refresh: {datetime.utcnow().strftime('%H:%M:%S')} UTC")
 
 # Round down to nearest 5 min for stable cache keys
@@ -128,7 +150,7 @@ ORDER BY window_start, edit_count DESC
 """
 
 # ---------------------------------------------------------------------------
-# Page title — renders immediately
+# Page title
 # ---------------------------------------------------------------------------
 
 st.title("Wikipedia Edit Stream — Anomaly Dashboard")
@@ -139,11 +161,11 @@ st.title("Wikipedia Edit Stream — Anomaly Dashboard")
 
 with st.spinner("Loading edit volume..."):
     try:
-        vol_df  = query(volume_sql)
-        vol_ok  = True
+        vol_df = query(volume_sql)
+        vol_ok = True
     except Exception as e:
         st.error(f"Failed to load volume data: {e}")
-        vol_ok  = False
+        vol_ok = False
 
 if not vol_ok or vol_df.empty:
     st.warning("No data in the selected time window. Try extending the lookback or check that the pipeline is running.")
@@ -243,16 +265,15 @@ st.subheader("Top Editors During Anomalous Windows")
 
 with st.spinner("Loading user activity..."):
     try:
-        user_df  = query(user_sql)
-        user_ok  = True
+        user_df = query(user_sql)
+        user_ok = True
     except Exception as e:
         st.error(f"Failed to load user data: {e}")
-        user_ok  = False
+        user_ok = False
 
 if user_ok and not user_df.empty:
     user_df["window_start"] = pd.to_datetime(user_df["window_start"])
-    c5 = st.columns(1)[0]
-    c5.metric("Unique Users", f"{user_df['user'].nunique():,}")
+    st.metric("Unique Users", f"{user_df['user'].nunique():,}")
 
     if anomaly_df.empty:
         st.info("No anomalous windows in the selected time range.")
@@ -300,7 +321,6 @@ with st.expander("Raw anomaly windows"):
 # ---------------------------------------------------------------------------
 
 if auto_refresh:
-    import time
     time.sleep(120)
     st.cache_data.clear()
     st.rerun()
