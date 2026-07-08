@@ -1,4 +1,4 @@
-## https://wiki-anomaly-pipeline-7474649013979407.aws.databricksapps.com/
+## https://wikipedia-anomaly-pipeline.streamlit.app/
 
 # Wikipedia Anomaly Pipeline
 
