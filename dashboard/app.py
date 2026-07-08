@@ -70,9 +70,17 @@ def get_connection():
 
 @st.cache_data(ttl=120)
 def query(sql_text: str) -> pd.DataFrame:
-    with get_connection().cursor() as cur:
-        cur.execute(sql_text)
-        return cur.fetchall_arrow().to_pandas()
+    try:
+        with get_connection().cursor() as cur:
+            cur.execute(sql_text)
+            return cur.fetchall_arrow().to_pandas()
+    except Exception as e:
+        if "SessionHandle" in str(e) or "session" in str(e).lower():
+            get_connection.clear()
+            with get_connection().cursor() as cur:
+                cur.execute(sql_text)
+                return cur.fetchall_arrow().to_pandas()
+        raise
 
 
 # ---------------------------------------------------------------------------
