@@ -25,7 +25,7 @@ Wikimedia SSE Stream
   03_gold_aggregates.py     ← Databricks: windowed aggregates + anomaly flags
         │
         ▼
-  dashboard/app.py          ← Databricks App (Streamlit)
+  dashboard/app.py          ← Streamlit Community Cloud
 ```
 
 ## Components
@@ -69,7 +69,7 @@ Batch aggregation over the last 2 days of silver data into two tables:
 Both tables are partitioned by `date` for efficient incremental overwrites and fast dashboard queries.
 
 ### Dashboard (`dashboard/`)
-Streamlit app deployed on Databricks Apps with four charts:
+Streamlit app deployed on Streamlit Community Cloud with four charts:
 - **Edit volume time series** with rolling mean, 2σ threshold, and flagged anomaly markers
 - **Bot vs human edit ratio** stacked bar with bot ratio trend line
 - **Z-score over time** with anomaly zone shading
@@ -123,10 +123,17 @@ Import each `.py` file into Databricks as a notebook (File → Import → select
 
 ### 4. Dashboard
 
-Deploy `dashboard/` as a Databricks App:
-- Source: this GitHub repo, `main` branch, source path `dashboard`
-- Add your SQL warehouse as an App resource (grants the app's service principal query access)
-- Grant the app's service principal READ access to the `wikipedia-anomaly-pipeline` secret scope
+Deploy `dashboard/` on [Streamlit Community Cloud](https://streamlit.io/cloud):
+
+1. Connect your GitHub repo and set the main file to `dashboard/app.py`
+2. Under **Settings → Secrets**, add:
+
+```toml
+DATABRICKS_HOST = "your-workspace.cloud.databricks.com"
+DATABRICKS_TOKEN = "your-personal-access-token"
+```
+
+The app auto-starts the SQL warehouse on first load if it is stopped (takes ~60 s). Subsequent loads hit the running warehouse directly. Queries are cached for 2 minutes.
 
 ## Repository Structure
 
@@ -140,7 +147,6 @@ wikipedia-anomaly-pipeline/
 │   └── 03_gold_aggregates.py     # Windowed aggregates + anomaly detection
 ├── dashboard/
 │   ├── app.py                    # Streamlit dashboard
-│   ├── app.yaml                  # Databricks Apps config
 │   └── requirements.txt
 ├── infra/
 │   ├── producer-setup.sh         # EC2 setup script
