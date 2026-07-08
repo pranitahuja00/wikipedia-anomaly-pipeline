@@ -19,14 +19,27 @@ st.set_page_config(
 WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/b05d02cebe141c50"
 
 
+def _fetch_token() -> str:
+    import urllib.request, urllib.parse, json, base64
+    host          = os.environ["DATABRICKS_HOST"]
+    client_id     = os.environ["DATABRICKS_CLIENT_ID"]
+    client_secret = os.environ["DATABRICKS_CLIENT_SECRET"]
+    credentials   = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    data          = urllib.parse.urlencode({"grant_type": "client_credentials", "scope": "all-apis"}).encode()
+    req           = urllib.request.Request(
+        f"{host}/oidc/v1/token", data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded", "Authorization": f"Basic {credentials}"},
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())["access_token"]
+
+
 @st.cache_resource
 def get_connection():
     return sql.connect(
         server_hostname=os.environ["DATABRICKS_HOST"],
         http_path=WAREHOUSE_HTTP_PATH,
-        auth_type="databricks-oauth",
-        oauth_client_id=os.environ["DATABRICKS_CLIENT_ID"],
-        oauth_client_secret=os.environ["DATABRICKS_CLIENT_SECRET"],
+        access_token=_fetch_token(),
     )
 
 
