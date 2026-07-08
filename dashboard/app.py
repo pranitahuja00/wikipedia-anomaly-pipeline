@@ -21,7 +21,9 @@ WAREHOUSE_HTTP_PATH = "/sql/1.0/warehouses/b05d02cebe141c50"
 
 def _fetch_token() -> str:
     import urllib.request, urllib.parse, json, base64
-    host          = os.environ["DATABRICKS_HOST"]
+    host          = os.environ["DATABRICKS_HOST"].rstrip("/")
+    if not host.startswith("https://"):
+        host = f"https://{host}"
     client_id     = os.environ["DATABRICKS_CLIENT_ID"]
     client_secret = os.environ["DATABRICKS_CLIENT_SECRET"]
     credentials   = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
