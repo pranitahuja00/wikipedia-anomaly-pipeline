@@ -68,7 +68,7 @@ lookback_hours = st.sidebar.slider(
     "Lookback (hours)",
     min_value=1,
     max_value=48,
-    value=1,
+    value=6,
 )
 
 auto_refresh = st.sidebar.checkbox("Auto-refresh every 2 min", value=False)
